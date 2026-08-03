@@ -41,6 +41,8 @@ def collect(
     ncbi_api_key: Optional[str] = None,
     openalex_api_key: Optional[str] = None,
     workers: int = 4,
+    sleep: float = 0.0,
+    max_retries: int = 3,
     client: Optional[Client] = None,
     progress: Optional[Callable[[int, int, str], None]] = None,
 ) -> List[dict]:
@@ -53,6 +55,8 @@ def collect(
         email=email,
         ncbi_api_key=ncbi_api_key,
         openalex_api_key=openalex_api_key,
+        sleep=sleep,
+        max_retries=max_retries,
     )
 
     dois = traverse.traverse(client, seeds, hops=hops, direction=direction, max_papers=max_papers)

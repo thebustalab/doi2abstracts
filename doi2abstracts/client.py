@@ -53,6 +53,8 @@ class Client:
         timeout: float = 15.0,
         min_abstract_chars: int = parse.DEFAULT_MIN_ABSTRACT_CHARS,
         sleep: float = 0.0,
+        max_retries: int = 3,
+        backoff: float = 1.0,
     ):
         self.email = (email or "").strip() or None
         self.openalex_api_key = (openalex_api_key or "").strip() or None
@@ -60,6 +62,8 @@ class Client:
         self.timeout = timeout
         self.min_abstract_chars = min_abstract_chars
         self.sleep = sleep
+        self.max_retries = max(0, max_retries)
+        self.backoff = max(0.1, backoff)
 
         from . import __version__
         ua = f"doi2abstracts/{__version__} (https://github.com/thebustalab/doi2abstracts)"
@@ -74,18 +78,38 @@ class Client:
 
     # -- low-level --------------------------------------------------------
 
+    # Transient statuses worth retrying: rate-limit and gateway/server hiccups.
+    _RETRY_STATUS = (429, 500, 502, 503, 504)
+
     def _get(self, url: str, params: Optional[dict] = None) -> Optional[requests.Response]:
-        if self.sleep:
-            time.sleep(self.sleep)
-        try:
-            resp = self.session.get(url, params=params or {}, timeout=self.timeout)
-        except Exception as exc:
-            log.warning("request failed %s: %s", url, exc)
-            return None
-        if resp.status_code != 200:
+        backoff = self.backoff
+        for attempt in range(self.max_retries + 1):
+            if self.sleep:
+                time.sleep(self.sleep)
+            try:
+                resp = self.session.get(url, params=params or {}, timeout=self.timeout)
+            except Exception as exc:
+                if attempt < self.max_retries:
+                    log.warning("request error %s (%s) — retrying in %.1fs", url, exc, backoff)
+                    time.sleep(backoff)
+                    backoff *= 2
+                    continue
+                log.warning("request failed %s: %s", url, exc)
+                return None
+            if resp.status_code == 200:
+                return resp
+            if resp.status_code in self._RETRY_STATUS and attempt < self.max_retries:
+                # Honour a numeric Retry-After when the server sends one, else back off.
+                ra = resp.headers.get("Retry-After", "")
+                wait = float(ra) if ra.strip().isdigit() else backoff
+                log.warning("HTTP %s for %s — retrying in %.1fs (attempt %d/%d)",
+                            resp.status_code, url, wait, attempt + 1, self.max_retries)
+                time.sleep(wait)
+                backoff *= 2
+                continue
             log.warning("HTTP %s for %s", resp.status_code, url)
             return None
-        return resp
+        return None
 
     def _openalex_params(self, extra: Optional[dict] = None) -> dict:
         params: dict = {}

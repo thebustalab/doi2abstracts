@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -40,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-papers", type=int, default=5000,
                    help="Hard cap on the number of papers collected; traversal stops when reached. "
                         "Citation fan-out is large — keep this sane. Default 5000.")
-    p.add_argument("--format", choices=("ris", "jsonl"), default="ris",
+    p.add_argument("--format", choices=("ris", "jsonl", "csv"), default="ris",
                    help="Output format. Default ris.")
     p.add_argument("--out", "-o", help="Output file. Defaults to stdout.")
     p.add_argument("--email", help="Contact email for the API 'polite pools' (recommended by OpenAlex/"
@@ -49,6 +48,10 @@ def build_parser() -> argparse.ArgumentParser:
                                           "Falls back to the NCBI_API_KEY env var.")
     p.add_argument("--openalex-api-key", help="Optional OpenAlex API key. Falls back to OPENALEX_API_KEY.")
     p.add_argument("--workers", type=int, default=4, help="Concurrent hydration workers. Default 4.")
+    p.add_argument("--sleep", type=float, default=0.0,
+                   help="Seconds to pause before every API request (gentler on rate limits). Default 0.")
+    p.add_argument("--max-retries", type=int, default=3,
+                   help="Retries on rate-limit/transient errors, with exponential backoff. Default 3.")
     p.add_argument("-v", "--verbose", action="store_true", help="Log progress to stderr.")
     p.add_argument("-q", "--quiet", action="store_true", help="Suppress all logging.")
     p.add_argument("--version", action="version", version=f"doi2abstracts {__version__}")
@@ -88,20 +91,17 @@ def main(argv=None) -> int:
         ncbi_api_key=args.ncbi_api_key or os.getenv("NCBI_API_KEY"),
         openalex_api_key=args.openalex_api_key or os.getenv("OPENALEX_API_KEY"),
         workers=args.workers,
+        sleep=args.sleep,
+        max_retries=args.max_retries,
     )
 
     with_abstract = sum(1 for r in records if r.get("abstract"))
     logging.getLogger("doi2abstracts").info(
         "collected %d papers (%d with abstracts)", len(records), with_abstract)
 
-    out = open(args.out, "w", encoding="utf-8") if args.out else sys.stdout
+    out = open(args.out, "w", encoding="utf-8", newline="") if args.out else sys.stdout
     try:
-        if args.format == "ris":
-            for md in records:
-                out.write(ris.ris_entry(md) + "\n\n")
-        else:  # jsonl
-            for r in records:
-                out.write(json.dumps(r, ensure_ascii=False) + "\n")
+        ris.write_stream(records, out, args.format)
     finally:
         if args.out:
             out.close()

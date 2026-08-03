@@ -8,10 +8,18 @@ manager, or parse the `AB` fields straight into their own pipeline.
 
 from __future__ import annotations
 
+import csv
+import json
 import re
-from typing import Dict, List
+from typing import Dict, List, TextIO
 
 from .parse import clean_text, format_authors
+
+# Column order for CSV output. `authors` is joined with "; ".
+CSV_COLUMNS = [
+    "doi", "title", "authors", "year", "journal", "volume", "issue",
+    "pages", "article_number", "cited_by", "ref_count", "abstract",
+]
 
 
 def ris_entry(md: dict) -> str:
@@ -65,6 +73,30 @@ def write_ris(records: List[dict], path: str) -> None:
     with open(path, "w", encoding="utf-8") as f:
         for md in records:
             f.write(ris_entry(md) + "\n\n")
+
+
+def write_stream(records: List[dict], stream: TextIO, fmt: str = "ris") -> None:
+    """Write records to an open stream in `ris`, `jsonl`, or `csv` form.
+
+    Records may be flat dicts (from to_record, authors as a list of strings) or
+    raw metadata dicts — ris_entry handles both.
+    """
+    if fmt == "ris":
+        for r in records:
+            stream.write(ris_entry(r) + "\n\n")
+    elif fmt == "jsonl":
+        for r in records:
+            stream.write(json.dumps(r, ensure_ascii=False) + "\n")
+    elif fmt == "csv":
+        writer = csv.DictWriter(stream, fieldnames=CSV_COLUMNS, extrasaction="ignore")
+        writer.writeheader()
+        for r in records:
+            row = dict(r)
+            if isinstance(row.get("authors"), list):
+                row["authors"] = "; ".join(row["authors"])
+            writer.writerow(row)
+    else:
+        raise ValueError(f"unknown format {fmt!r}")
 
 
 def to_record(md: dict) -> Dict:
