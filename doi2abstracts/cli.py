@@ -39,6 +39,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-papers", type=int, default=5000,
                    help="Hard cap on the number of papers collected; traversal stops when reached. "
                         "Citation fan-out is large — keep this sane. Default 5000.")
+    p.add_argument("--estimate", action="store_true",
+                   help="Walk the citation graph and report how many papers a run would collect, "
+                        "WITHOUT fetching abstracts. Use it to size a run before committing.")
     p.add_argument("--format", choices=("ris", "jsonl", "csv"), default="ris",
                    help="Output format. Default ris.")
     p.add_argument("--out", "-o", help="Output file. Defaults to stdout.")
@@ -81,6 +84,21 @@ def main(argv=None) -> int:
     if not email:
         print("note: no --email/OPENALEX_MAILTO set — APIs still work, but a contact email "
               "gets you the faster 'polite pool'.", file=sys.stderr)
+
+    if args.estimate:
+        from .client import Client
+        from . import traverse as _traverse
+        client = Client(email=email, ncbi_api_key=args.ncbi_api_key or os.getenv("NCBI_API_KEY"),
+                        openalex_api_key=args.openalex_api_key or os.getenv("OPENALEX_API_KEY"),
+                        sleep=args.sleep, max_retries=args.max_retries)
+        dois = _traverse.traverse(client, seeds, hops=args.hops, direction=args.direction,
+                                  max_papers=args.max_papers)
+        n_seeds = len({_traverse.normalize_doi(s) for s in seeds})
+        print(f"{len(dois)} papers would be collected "
+              f"({n_seeds} seed(s) + {len(dois) - n_seeds} discovered) "
+              f"at hops={args.hops}, direction={args.direction}, cap={args.max_papers}.")
+        print("(estimate only — no abstracts fetched; re-run without --estimate to collect them)")
+        return 0
 
     records = collect(
         seeds,
