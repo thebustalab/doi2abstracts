@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doi2abstracts"
+version = "0.1.0"
+description = "Given one or more DOIs, walk the citation graph and collect every paper's abstract into a RIS/JSONL file."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Lucas Busta" }]
+keywords = ["doi", "citations", "openalex", "crossref", "pubmed", "abstracts", "bibliography", "ris"]
+dependencies = ["requests>=2.25"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[project.scripts]
+doi2abstracts = "doi2abstracts.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["doi2abstracts*"]
