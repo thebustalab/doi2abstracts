@@ -1,8 +1,8 @@
 ---
 title: Retrieving a literature corpus for LLM analysis
 summary: One command turns a few seed DOIs into thousands of abstracts, so students can run their own language model experiments on real literature without API keys, a GPU, or a scraping project.
-faculty: Lucas Busta
-department: Chemistry and Biochemistry
+faculty: Dr. Lucas Busta
+department: Chemistry and Biochemistry, University of Minnesota Duluth
 department_id: chemistry-and-biochemistry
 audience: Faculty that do computational work on scientific literature, and anyone assembling a corpus for text analysis
 use_case: Research and teaching infrastructure
@@ -10,11 +10,12 @@ tools:
   - Claude Code
   - Any language model the student chooses
 tags:
-  - literature
-  - corpus
-  - text mining
-  - python
-image: /assets/images/doi2abstracts-cover.jpg
+  - Research
+  - Literature review
+  - Text mining
+  - Corpus building
+  - Python
+image: /assets/images/doi2abstracts.jpg
 repository_url: https://github.com/thebustalab/doi2abstracts
 ---
 
