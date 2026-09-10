@@ -14,7 +14,7 @@ tags:
   - corpus
   - text mining
   - python
-image: /assets/images/example.svg
+image: /assets/images/doi2abstracts-cover.jpg
 repository_url: https://github.com/thebustalab/doi2abstracts
 ---
 
