@@ -15,7 +15,7 @@ tags:
   - Text mining
   - Corpus building
   - Python
-image: /assets/images/doi2abstracts.jpg
+image: /assets/images/doi2abstracts.png
 repository_url: https://github.com/thebustalab/doi2abstracts
 ---
 
