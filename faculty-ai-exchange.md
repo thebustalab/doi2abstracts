@@ -3,7 +3,7 @@ title: Retrieving a literature corpus for LLM analysis
 summary: One command turns a few seed DOIs into thousands of abstracts, so students can run their own language model experiments on real literature without API keys, a GPU, or a scraping project.
 faculty: Dr. Lucas Busta
 department: Chemistry and Biochemistry, University of Minnesota Duluth
-department_id: chemistry-and-biochemistry
+department_id: umd-chemistry-and-biochemistry
 audience: Faculty that do computational work on scientific literature, and anyone assembling a corpus for text analysis
 use_case: Research and teaching infrastructure
 tools:
